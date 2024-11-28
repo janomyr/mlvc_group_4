@@ -43,7 +43,7 @@ class Perceptron:
         numpy.ndarray: Class labels.
         """
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        return
+        return np.sign(np.dot(self.w, X) + self.b)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
     def fit(self, X, y):
@@ -86,8 +86,8 @@ class Perceptron:
                 prediction_for_update = self.forward(X[n, :])
                 # update the weights of the perceptron at random
                 # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-                self.w = self.w
-                self.b = self.b
+                self.w += self.lr * (y[n] - prediction_for_update) * X[n, :]
+                self.b += self.lr * (y[n] - prediction_for_update)
                 # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
             # Appending number of misclassified examples
@@ -107,5 +107,5 @@ class Perceptron:
         numpy.ndarray: Predicted class labels.
         """
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        return
+        return np.sign(np.dot(X, self.w) + self.b)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
