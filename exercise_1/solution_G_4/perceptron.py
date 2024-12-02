@@ -107,5 +107,5 @@ class Perceptron:
         numpy.ndarray: Predicted class labels.
         """
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        return np.sign(np.dot(X, self.w) + self.b)
+        return self.forward(X.T)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
