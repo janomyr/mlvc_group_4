@@ -44,11 +44,25 @@ def sample_points(mean, cov, n, observation=None):
 
     # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
     if observation:
-        # conditioned on observation
-        sampled_points = None
+        # conditioned on observation+
+        mu_1 = mean[0]
+        mu_2 = mean[1]
+
+        sigma_11 = cov[0,0]
+        sigma_12 = cov[0,1]
+        sigma_21 = cov[1,0]
+        sigma_22_inv = 1/cov[1,1]
+        
+        mean_c = [mu_1 + sigma_12 * sigma_22_inv * (observation - mu_2)]
+        cov_c = sigma_11 - sigma_12 * sigma_22_inv * sigma_21
+
+        x1 = np.ones((n))*observation
+        x2 = np.random.normal(mean_c, np.sqrt(cov_c), n)
+
+        sampled_points = np.stack((x1,x2),axis=0)
     else:
         # unconditioned
-        sampled_points = None
+        sampled_points = np.random.multivariate_normal(mean, cov, n).T
     # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
     return sampled_points
