@@ -161,9 +161,9 @@ class GaussianProcess:
             )
 
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        self.K = None
-        self.L_ = None
-        self.alpha_ = None
+        self.K = self.kernel(X_train) + self.noise * np.eye(len(X_train))
+        self.L_ = cholesky(self.K, lower=True)
+        self.alpha_ = cho_solve((self.L_, True),y_train)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
     def predict(self, X_test):
@@ -194,21 +194,27 @@ class GaussianProcess:
                 )
 
             # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
+            K_test_test = self.kernel(X_test) # Covariance matrix of test data
             mean_pred_distribution, std_pred_distribution, conv_pred_distribution = (
-                None,
-                None,
-                None,
+                np.zeros(X_test.shape[0]), # mean has to be 0
+                np.sqrt(np.diag(K_test_test)), # std. der. of variance to itself 
+                K_test_test,
             )
+            y_mean_noisy, y_std_noisy, y_cov_noisy = mean_pred_distribution, std_pred_distribution, conv_pred_distribution
             # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
             return y_mean_noisy, y_std_noisy, y_cov_noisy
 
         else:  # Predict based on GP posterior
             # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
+            K_test_test = self.kernel(X_test) # Covariance matrix of test data
+            K_test_train = self.kernel(X_test, self.X_train) # Covariance matrix of test and train data
+            v = solve_triangular(self.L_, K_test_train.T, lower=True) # solve for v for predictive varianace
+            conv = K_test_test - np.matmul(v.T, v) # compute predictive variance
             mean_pred_distribution, std_pred_distribution, conv_pred_distribution = (
-                None,
-                None,
-                None,
+                np.matmul(K_test_train, self.alpha_), # according to literature should be K_test_train.T but dimensions do not match (?)
+                np.sqrt(np.diag(conv)),
+                conv,
             )
             # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
