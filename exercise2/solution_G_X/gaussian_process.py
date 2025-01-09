@@ -194,7 +194,7 @@ class GaussianProcess:
                 )
 
             # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-            K_test_test = self.kernel(X_test) # Covariance matrix of test data
+            K_test_test = self.kernel(X_test) + self.noise * np.eye(len(X_test)) # Covariance matrix of test data
             mean_pred_distribution, std_pred_distribution, conv_pred_distribution = (
                 np.zeros(X_test.shape[0]), # mean has to be 0
                 np.sqrt(np.diag(K_test_test)), # std. der. of variance to itself 
@@ -207,7 +207,7 @@ class GaussianProcess:
 
         else:  # Predict based on GP posterior
             # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-            K_test_test = self.kernel(X_test) # Covariance matrix of test data
+            K_test_test = self.kernel(X_test) + self.noise * np.eye(len(X_test)) # Covariance matrix of test data, added noise so it matches example (right?)
             K_test_train = self.kernel(X_test, self.X_train) # Covariance matrix of test and train data
             v = solve_triangular(self.L_, K_test_train.T, lower=True) # solve for v for predictive varianace
             conv = K_test_test - np.matmul(v.T, v) # compute predictive variance
