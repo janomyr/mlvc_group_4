@@ -57,7 +57,14 @@ class Attention(nn.Module):
     ):
         super().__init__()
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        pass
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        self.scale = qk_scale or head_dim**-0.5
+
+        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        self.attn_drop = nn.Dropout(0.0)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(0.0)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
     def forward(self, x):
@@ -75,7 +82,16 @@ class Attention(nn.Module):
         """
         B, N, C = x.shape
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        pass
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv.unbind(0)
+
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn.softmax(dim=-1)
+        attn = self.attn_drop(attn)
+
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = self.proj(x)
+        x = self.proj_drop(x)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
         return x, attn
 
@@ -86,6 +102,7 @@ class Block(nn.Module):
         dim,
         num_heads,
         mlp_ratio=4.0,
+        drop = 0.0,
         qkv_bias=False,
         qk_scale=None,
         act_layer=nn.GELU,
@@ -105,7 +122,7 @@ class Block(nn.Module):
             in_features=dim,
             hidden_features=mlp_hidden_dim,
             act_layer=act_layer,
-            drop=drop,
+            drop=drop
         )
 
     def forward(self, x, return_attention=False):
@@ -163,9 +180,12 @@ class VisionTransformer(nn.Module):
         self.num_features = self.embed_dim = dim
 
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        self.patch_embed = None
-        self.cls_token = None
-        self.pos_embed = None
+        self.patch_embed = PatchEmbed(img_size=image_size, patch_size=patch_size, in_chans=3, embed_dim=dim)
+
+        num_patches = self.patch_embed.num_patches
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, dim))
+        self.pos_drop = nn.Dropout(0.0)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
         assert pool in {
@@ -211,11 +231,14 @@ class VisionTransformer(nn.Module):
 
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
         # apply patch linear embedding
-        pass
+        B = x.shape[0]
+        x = self.patch_embed(x) 
         # add the [CLS] token to the embed patch tokens
-        pass
+        cls_tokens = self.cls_token.expand(B, -1, -1) 
+        x = torch.cat((cls_tokens, x), dim=1)
         # add positional encoding to each token
-        pass
+        x = x + self.pos_embed 
+        x = self.pos_drop(x)
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
         return x
