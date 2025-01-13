@@ -120,7 +120,20 @@ class GaussianProcess:
         length_scale, noise, periodicity = params
 
         # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-        pass
+        if self.kernel_type == "RBF+Sine" or self.kernel_type == "Sine+RBF":
+            kernel = RBF(length_scale=length_scale) + ExpSineSquared(
+                length_scale=length_scale, periodicity=periodicity
+            )
+        elif self.kernel_type == "RBF":
+            kernel = RBF(length_scale=length_scale)
+        elif self.kernel_type == "Sine":
+            kernel = ExpSineSquared(length_scale=length_scale, periodicity=periodicity)
+        K = kernel(self.X_train) + noise * np.eye(len(self.X_train))
+        L = cholesky(K, lower=True)
+        alpha = cho_solve((L, True), self.y_train)
+        log_det_K = 2 * np.sum(np.log(np.diag(L)))
+        nll = 0.5 * np.dot(self.y_train, alpha) + 0.5 * log_det_K + 0.5 * len(self.X_train) * np.log(2 * np.pi)
+        return nll
         # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
     def fit(self, X_train, y_train, meta_parameter_search=False):
@@ -141,8 +154,20 @@ class GaussianProcess:
             )
 
             # *****BEGINNING OF YOUR CODE (DO NOT DELETE THIS LINE)*****
-            self.negative_log_likelihood_type_2
-            self.length_scale, self.noise, self.periodicity = None, None, None
+            initial_params = np.array([self.length_scale, self.noise, self.periodicity])
+            bounds = [(1e-5, None), (1e-5, None), (1e-5, None)]  # Bounds for l, σ_y, periodicity
+    
+            result = opt.minimize(
+                self.negative_log_likelihood_type_2,
+                initial_params,
+                bounds=bounds,
+                method='L-BFGS-B'
+            )
+    
+            if result.success:
+                self.length_scale, self.noise, self.periodicity = result.x
+            else:
+                print("Optimization failed:", result.message)
             # *****END OF YOUR CODE (DO NOT DELETE THIS LINE)*****
 
             print(
